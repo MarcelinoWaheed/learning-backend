@@ -1,10 +1,15 @@
 import express from "express";
 import taskRouter from "./routes/taskRoute.js";
+import connectMongo from "./config/connectMongo.js";
+import "dotenv/config";
+import TextStatus from "./utils/httpStatus.js";
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+connectMongo();
+
+app.use(express.json({ limit: "10kb" }));
 
 app.use("/api/tasks", taskRouter);
 
