@@ -1,7 +1,11 @@
-let tasks = [
-  { id: 1, title: "buy milk", completed: true },
-  { id: 2, title: "buy eggs", completed: false },
-  { id: 3, title: "take the breakfast", completed: false },
-];
+import mongoose from "mongoose";
 
-export { tasks };
+const tasksModel = new mongoose.Schema(
+  {
+    title: { type: String, required: true, trim: true },
+    completed: { type: Boolean, default: false },
+  },
+  { versionKey: false, timestamps: true }
+);
+
+export default mongoose.model("Task", tasksModel);
