@@ -1,92 +1,66 @@
 import { Tasks } from "../models/task.model.js";
 import { validationResult } from "express-validator";
 import TextStatus from "../utils/httpStatus.js";
+import asyncFnWrap from "../middleware/asyncFnWrap.js";
+import APIError from "../utils/APIError.js";
 
 let nextId = Tasks.length + 1;
 
-export const getTasks = async (req, res) => {
-  try {
-    const tasks = await Tasks.find();
-    res.status(TextStatus.OK).json({ success: true, tasks });
-  } catch (error) {
-    console.log(error.message);
-  }
-};
+export const getTasks = asyncFnWrap(async (req, res) => {
+  const query = req.query;
+  const limit = query.limit || 3;
+  const page = query.page || 1;
+  const skip = (page - 1) * limit;
 
-export const getTaskById = async (req, res) => {
-  try {
-    const taskId = req.params.taskId;
-    const task = await Tasks.findById(taskId);
-    if (!task) return res.status(TextStatus.NOT_FOUND).json({ success: false, message: "Task not found" });
-    res.status(TextStatus.OK).json({ success: true, task });
-  } catch (error) {
-    console.log(error.message);
+  const tasks = await Tasks.find().limit(limit).skip(skip);
+  res.status(TextStatus.OK).json({ success: true, tasks });
+});
+
+export const getTaskById = asyncFnWrap(async (req, res) => {
+  const taskId = req.params.taskId;
+  const task = await Tasks.findById(taskId);
+  if (!task) {
+    const error = new APIError.create("Task not found", false, TextStatus.NOT_FOUND);
+    return error;
   }
-};
+  res.status(TextStatus.OK).json({ success: true, task });
+});
 
 export const createTask = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.status(TextStatus.BAD_REQUEST).json({ success: false, errors: errors.array() });
+  const err = validationResult(req);
+  if (!err.isEmpty()) {
+    const error = APIError.create(err.array(), false, TextStatus.BAD_REQUEST);
+    return next(error);
+  }
   next();
 };
 
-export const createTaskHandler = async (req, res) => {
-  try {
-    const newtask = await Tasks.create(req.body);
-    await newtask.save();
-    res.status(TextStatus.CREATED).json({ success: true, newtask });
-  } catch (error) {
-    console.log(error.message);
-  }
-};
+export const createTaskHandler = asyncFnWrap(async (req, res) => {
+  const newtask = await Tasks.create(req.body);
+  await newtask.save();
+  res.status(TextStatus.CREATED).json({ success: true, movie: newtask });
+});
 
-export const updateTask = async (req, res) => {
-  try {
-    const taskId = req.params.taskId;
-    const updatetask = await Tasks.findByIdAndUpdate(
-      taskId,
-      { $set: { ...req.body } },
-      { new: true } // This tells MongoDB to return the updated document
-    );
-    if (!updatetask) return res.status(TextStatus.NOT_FOUND).json({ success: false, message: "Task not found" });
-    res.status(TextStatus.OK).json({ success: true, updatetask });
-  } catch (error) {
-    console.log(error.message);
+export const updateTask = asyncFnWrap(async (req, res) => {
+  const taskId = req.params.taskId;
+  const task = await Movies.findByIdAndUpdate(
+    taskId,
+    { $set: { ...req.body } },
+    { new: true } 
+  );
+  if (!task) {
+    const error = new APIError.create("Task not found", false, TextStatus.NOT_FOUND);
+    return next(error);
   }
-};
+  return res.status(TextStatus.OK).json({ success: true, task });
+});
 
-export const deleteTask = async (req, res) => {
-  try {
-    const taskId = req.params.taskId;
-    const deletetask = await Tasks.findByIdAndDelete(taskId);
-    if (!deletetask) res.status(TextStatus.NOT_FOUND).json({ success: false, message: "Task not found" });
-    res.status(TextStatus.NO_CONTENT).json({ success: true, message: "Movie deleted successfully" });
-  } catch (error) {
-    console.log(error.message);
+export const deleteTask = (async (req, res) => {
+  const taskId = req.params.taskId;
+  const task = await Movies.findByIdAndDelete(taskId);
+  if (!task) {
+    const error = new APIError.create("Task not found", false, TextStatus.NOT_FOUND);
+    return next(error);
   }
-};
-
-export const markComplete = async (req, res) => {
-  try {
-    const taskId = req.params.taskId;
-    const task = await Task.findById(taskId);
-    if (!task) return res.status(TextStatus.NOT_FOUND).json({ success: false, message: "Task not found" });
-    task.completed = true;
-    await task.save();
-    res.status(TextStatus.OK).json({ success: true, task });
-  } catch (error) {
-    console.log(error.message);
-  }
-};
-
-export const getStats = async (req, res) => {
-  try 
-  {
-    const total = await Tasks.countDocuments();
-    const completed = await Tasks.countDocuments({ completed: true });
-    const incomplete = total - completed;
-    res.status(TextStatus.OK).json({ success: true, total, completed, incomplete });
-  } catch (error) {
-    console.log(error.message);
-  }
-};
+  return res.status(TextStatus.OK).json({ success: true, message: "Movie deleted successfully" });
+});
