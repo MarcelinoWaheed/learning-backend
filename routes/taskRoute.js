@@ -7,8 +7,6 @@ import {
   createTaskHandler,
   updateTask,
   deleteTask,
-  markComplete,
-  getStats
 } from "../controllers/taskController.js";
 
 const taskRouter = Router();
@@ -21,11 +19,5 @@ taskRouter.route("/:taskId")
   .get(getTaskById)
   .put(taskValidation, updateTask)
   .delete(deleteTask);
-
-taskRouter.route("/:taskId/complete")
-  .patch(markComplete);
-
-taskRouter.route("/stats")
-  .get(getStats);
 
 export default taskRouter;
