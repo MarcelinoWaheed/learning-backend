@@ -5,6 +5,5 @@ const asyncFnWrap = (fn) => {
 		}); 
 	};
 };
-
-
 export default asyncFnWrap;
+
