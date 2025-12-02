@@ -1,4 +1,4 @@
-import { Tasks } from "../models/task.model.js";
+import Tasks from "../models/task.model.js";
 import { validationResult } from "express-validator";
 import TextStatus from "../utils/httpStatus.js";
 import asyncFnWrap from "../middleware/asyncFnWrap.js";
@@ -12,13 +12,13 @@ export const getTasks = asyncFnWrap(async (req, res) => {
   const page = query.page || 1;
   const skip = (page - 1) * limit;
 
-  const tasks = await Tasks.find().limit(limit).skip(skip);
-  res.status(TextStatus.OK).json({ success: true, tasks });
+  const tasks = await Tasks.find({ user: req.user.id }).limit(limit).skip(skip);
+  res.status(TextStatus.OK).json({ success: true, count: tasks.length, tasks });
 });
 
 export const getTaskById = asyncFnWrap(async (req, res) => {
   const taskId = req.params.taskId;
-  const task = await Tasks.findById(taskId);
+  const task = await Tasks.findOne({ _id: taskId, user: req.user.id });
   if (!task) {
     const error = new APIError.create("Task not found", false, TextStatus.NOT_FOUND);
     return error;
@@ -36,17 +36,16 @@ export const createTask = (req, res, next) => {
 };
 
 export const createTaskHandler = asyncFnWrap(async (req, res) => {
-  const newtask = await Tasks.create(req.body);
-  await newtask.save();
+  const newtask = await Tasks.create({ ...req.body, user: req.user.id });
   res.status(TextStatus.CREATED).json({ success: true, movie: newtask });
 });
 
 export const updateTask = asyncFnWrap(async (req, res) => {
   const taskId = req.params.taskId;
-  const task = await Movies.findByIdAndUpdate(
-    taskId,
+  const task = await Tasks.findOneAndUpdate(
+    { _id: taskId, user: req.user.id },
     { $set: { ...req.body } },
-    { new: true } 
+    { new: true }
   );
   if (!task) {
     const error = new APIError.create("Task not found", false, TextStatus.NOT_FOUND);
@@ -57,11 +56,10 @@ export const updateTask = asyncFnWrap(async (req, res) => {
 
 export const deleteTask = (async (req, res) => {
   const taskId = req.params.taskId;
-  const task = await Movies.findByIdAndDelete(taskId);
+  const task = await Tasks.findOneAndDelete({ _id: taskId, user: req.user.id });
   if (!task) {
-    const error = new APIError.create("Task not found", false, TextStatus.NOT_FOUND);
+    const error = APIError.create("Task not found", false, TextStatus.NOT_FOUND);
     return next(error);
   }
   return res.status(TextStatus.OK).json({ success: true, message: "Movie deleted successfully" });
 });
-
