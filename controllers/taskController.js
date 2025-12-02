@@ -4,8 +4,6 @@ import TextStatus from "../utils/httpStatus.js";
 import asyncFnWrap from "../middleware/asyncFnWrap.js";
 import APIError from "../utils/APIError.js";
 
-let nextId = Tasks.length + 1;
-
 export const getTasks = asyncFnWrap(async (req, res) => {
   const query = req.query;
   const limit = query.limit || 3;
@@ -63,3 +61,4 @@ export const deleteTask = (async (req, res) => {
   }
   return res.status(TextStatus.OK).json({ success: true, message: "Movie deleted successfully" });
 });
+
